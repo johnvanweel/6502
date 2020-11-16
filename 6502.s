@@ -32,44 +32,18 @@ reset:
  lda #%00000001 ; Clear screen
  jsr lcd_instruction
 
- lda #"H"
+ ldx #0
+print:
+ lda message,x
+ beq loop
  jsr print_char
-
- lda #"E"
- jsr print_char
-
- lda #"L"
- jsr print_char
-
- lda #"L"
- jsr print_char
-
- lda #"O"
- jsr print_char
-
- lda #","
- jsr print_char
-
- lda #"W"
- jsr print_char
-
- lda #"O"
- jsr print_char
-
- lda #"R"
- jsr print_char
-
- lda #"L"
- jsr print_char
-
- lda #"D"
- jsr print_char
-
- lda #"!"
- jsr print_char
+ inx
+ jmp print
 
 loop:
  jmp loop
+
+message: .asciiz "Hello, world!"
 
 lcd_wait:
  pha            ; Store A-reg to stack
@@ -79,7 +53,7 @@ lcd_wait:
 lcd_busy:
  lda #RW
  sta PORTA
- lda (#RW | E)
+ lda #(RW | E)
  sta PORTA
  lda PORTB      ; Load R/W from LCD
  and #%10000000
@@ -110,7 +84,7 @@ lcd_instruction:
  rts
 
 print_char:
- jmp lcd_wait
+ jsr lcd_wait
  sta PORTB
 
  lda #RS         ; Clear RS/RW/E bits
