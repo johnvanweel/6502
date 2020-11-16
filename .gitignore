@@ -1,0 +1,6 @@
+.idea
+*.iml
+*.out
+vasm6502_oldstyle
+6502.code-workspace
+
