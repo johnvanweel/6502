@@ -7,6 +7,7 @@ DDRA = $6003
 value = $0200   ; 2 bytes
 mod10 = $0202   ; 2 bytes
 message = $0204 ; 6 bytes
+counter = $020a ; 2 bytes
 
 E =  %10000000
 RW = %01000000
@@ -17,6 +18,7 @@ RS = %00100000
 reset:
  ldx #$ff
  txs
+ cli            ; Enable interrupt
 
  lda #%11111111 ; Set all pins on port B to output
  sta DDRB
@@ -32,15 +34,26 @@ reset:
  lda #%00000001 ; Clear screen
  jsr lcd_instruction
 
+; 0- counter
+ lda #0
+ sta counter
+ sta counter + 1
+
 ; Initialize message to 0
+loop:
+ lda #%00000010 ; Cursor back to home
+ jsr lcd_instruction
+
  lda #0
  sta message
 
 ; Initialize value to be the number we want to convert
- lda number         ; Load first byte of number into RAM -> value
+ sei                 ; Protect value by disabling interrupts
+ lda counter         ; Load first byte of number into RAM -> value
  sta value
- lda number + 1     ; Load second byte of number into RAM -> value + 1
- sta value+1
+ lda counter + 1     ; Load second byte of number into RAM -> value + 1
+ sta value + 1
+ cli
 
 divide:
 ; Initialize remainder to 0
@@ -91,9 +104,6 @@ print:
  jsr print_char
  inx
  jmp print
-
-loop:
- jmp loop
 
 number: .word 1729
 
@@ -170,7 +180,17 @@ print_char:
  sta PORTA
 
  rts
+
+nmi:
+irq:
+ inc counter
+ bne exit_irq
+ inc counter + 1
+exit_irq:
+ rti
+
  
- .org $fffc
+ .org $fffa
+ .word nmi
  .word reset
- .word $0000 
+ .word irq
