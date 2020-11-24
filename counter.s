@@ -3,6 +3,9 @@ PORTB = $6000
 PORTA = $6001
 DDRB = $6002
 DDRA = $6003
+PCR = $600c
+IFR = $600d
+IER = $600e
 
 value = $0200   ; 2 bytes
 mod10 = $0202   ; 2 bytes
@@ -16,9 +19,14 @@ RS = %00100000
  .org $8000
 
 reset:
- ldx #$ff
+ ldx #$ff       ; Stack starts at ff
  txs
- cli            ; Enable interrupt
+ cli            ; Enable interrupts
+
+ lda #$82       ; Enable CA1 on 6522
+ sta IER
+ lda #$00
+ sta PCR
 
  lda #%11111111 ; Set all pins on port B to output
  sta DDRB
@@ -53,11 +61,11 @@ loop:
  sta value
  lda counter + 1     ; Load second byte of number into RAM -> value + 1
  sta value + 1
- cli
+ cli                 ; Counter protected, enable interrupts again
 
 divide:
 ; Initialize remainder to 0
- lda #0             ; Same with mod10
+ lda #0
  sta mod10
  sta mod10 + 1
  clc                ; Clear carry bit
@@ -183,10 +191,33 @@ print_char:
 
 nmi:
 irq:
+ pha
+ txa
+ pha
+ tya
+ pha
+
  inc counter
  bne exit_irq
  inc counter + 1
 exit_irq:
+ ldx #$ff
+ ldy #$ff
+
+delay:
+ dex
+ bne delay
+ dey
+ bne delay
+
+ bit PORTA      ; Read PORTA to clear 6522 interrupt
+
+ pla
+ tay
+ pla
+ tax
+ pla
+
  rti
 
  
