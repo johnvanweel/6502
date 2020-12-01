@@ -1,5 +1,4 @@
 void setup() {
-  // put your setup code here, to run once:
   digitalWrite(2, LOW);
   digitalWrite(3, LOW);
   pinMode(2, OUTPUT);
